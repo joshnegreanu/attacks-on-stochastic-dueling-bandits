@@ -1,2 +1,2 @@
-# attacks-on-stochastic-dueling-bandits
+# Attacks on Stochastic Dueling Bandits
  
