@@ -2,11 +2,21 @@ import numpy as np
 import scipy.stats as stats
 import math
 import random
+import matplotlib.pyplot as plt
 
-from dueling_functions import duel, v_mod_div
+from dueling_functions import duel, corrupt_duel, v_mod_div
 
-def RUCB(K, T, P, a):
-    W = np.zeros((K, K))
+costs = []
+pulls = []
+total_cost = 0
+total_pulls = 0
+regrets = []
+total_regret = 0
+
+def RUCB(K, T, P, a, cond):
+    global total_cost, total_pulls, costs, pulls, total_regret, regrets
+
+    W = np.ones((K, K))
     B = []
     for t in range(1, T+1):
         U = v_mod_div(W, W + W.T) + np.sqrt(v_mod_div(a * np.log(t), W + W.T))
@@ -56,10 +66,25 @@ def RUCB(K, T, P, a):
                 d = i
                 d_u_max = U[i][c]
         
-        if duel(c, d, P) == 1:
+        (duel_res, cost) = duel(c, d, P)
+        total_cost += cost
+        
+        if duel_res == 1:
             W[c][d] += 1
         else:
             W[d][c] += 1
+        
+        costs.append(total_cost)
+        if c == 0 and d == 0:
+            total_pulls += 1
+        
+        pulls.append(total_pulls)
+
+        total_regret += P[cond][c] + P[cond][d] - 1
+        #total_regret += max(P[cond][c] - 0.5, P[cond][d] - 0.5)
+        #total_regret += min(P[cond][c] - 0.5, P[cond][d] - 0.5)
+        
+        regrets.append(total_regret)
 
     arm_counts = []
     for i in range(0, K):
@@ -70,5 +95,10 @@ def RUCB(K, T, P, a):
             elif W[i][j]/(W[i][j]+W[j][i]) > 0.5:
                 count += 1
         arm_counts.append(count)
+    
+    #print(v_mod_div(W, W + W.T))
+
+    plt.plot(np.arange(T), costs, regrets, '-')
+    plt.show()
     
     return np.argmax(arm_counts)
